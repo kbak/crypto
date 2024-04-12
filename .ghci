@@ -1,0 +1,5 @@
+:set +s
+:set +t
+:set -imath:field:merkle:ec:qap:kzg
+:set -package mtl
+:set -package integer-logarithms
