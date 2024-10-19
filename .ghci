@@ -1,5 +1,9 @@
 :set +s
 :set +t
-:set -imath:field:merkle:ec:qap:kzg
+:set -imath:field:merkle:ec:qap:kzg:fhe
+:set -package array
 :set -package mtl
 :set -package integer-logarithms
+:set -package random
+:set -package normaldistribution
+:def backup (\_ -> return ":! rsync -a --delete --exclude='toys' --exclude='starkapp' /Users/kbak/work/qsp/src/crypto/ /Users/kbak/cloud/crypto")
