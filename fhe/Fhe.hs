@@ -1,7 +1,7 @@
 -- based on:
 -- https://www.zama.ai/post/tfhe-deep-dive-part-1
 -- https://www.zama.ai/post/tfhe-deep-dive-part-2
-module GLWE where
+module FHE where
 
 import Basic
 import GCf
@@ -58,9 +58,10 @@ decryptGLWE (p, q, n) (a, b) s = toGCf p dmeByDelta
   dme   = map gcf $ b `polysub` msSum
   dmeByDelta = map (\f -> round $ fromIntegral f / delta) dme
 
-encryptLWE (p, q) = encryptGLWE (p, q, 1)
+-- LWE is GLWE with k = n \in Z and N = 1
+encryptLWE (p, q) s a = encryptGLWE (p, q, 1) (map (:[]) s) (map (:[]) a)
 
-decryptLWE (p, q) = decryptGLWE (p, q, 1)
+decryptLWE (p, q) (a, b) s = decryptGLWE (p, q, 1) (map (:[]) a, b) (map (:[]) s)
 
 -- generates a polynomial of degree (n-1) with binary elements (mod 2)
 -- uses uniform distribution
@@ -91,3 +92,15 @@ genPolyGauss n delta = do
 -- generates a secret key which is composed of k binary polynomials of degree n-1
 genSecretKey n k = do
   replicateM k (genPolyBinary n)
+
+-- switches modulus from q to omega so that a_i' = round(omega * a_i / q) `mod` omega
+switchModulus q omega as = map gcf $ switchModulus' q omega as
+
+switchModulusGCf q omega as = switchModulus' q omega (map gcf as)
+
+switchModulus' q omega as = toGCf omega as'
+  where 
+  as' = map (\a -> round' $ fromIntegral (omega * a) / (fromIntegral q)) as
+  round' x
+    | x >= 0    = ceiling x
+    | otherwise = floor x

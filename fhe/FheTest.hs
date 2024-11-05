@@ -1,8 +1,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 -- ^^^ for QuickCheck.quickCheckAll
-module GlweTest where
+module FHETest where
 
-import GLWE
+import FHE
 import GCf
 import Polynomial
 import Test.QuickCheck
@@ -49,6 +49,35 @@ prop_glweEncryptDecrypt =
   bc = encryptGLWE (p, q, n) s a e m
   b  = map gcf bc
   m' = decryptGLWE (p, q, n) (a, bc) s
+
+prop_lweEncryptDecrypt =
+    k == length s &&
+    n >= length m &&
+    k == length a &&
+    -- B = 26
+    b == [26] &&
+    -- decrypted message should be the same as the original one
+    m == map gcf m'
+  where
+  p = 4
+  q = 64
+  -- degree of cyclomatic polynomial x^n + 1
+  n = 1
+  -- the number of polynomials making up the secret key
+  k = 4
+  -- secret key
+  s = [0, 1, 1, 0]
+  -- message to encrypt
+  -- M = 1
+  m = [1]
+  -- mask
+  a = [-25, 12, -3, 7]
+  -- discrete Gaussian error
+  -- E = 1
+  e  = [1]
+  bc = encryptLWE (p, q) s a e m
+  b  = map gcf bc
+  m' = decryptLWE (p, q) (a, bc) s
 
 -- example from https://www.zama.ai/post/tfhe-deep-dive-part-2
 prop_glweHomomorphicAddition =
@@ -187,6 +216,41 @@ prop_glweHomomorphicMultiplicationByConstant =
   cbMult = polymultcyclo q n (toGCf q l) (toGCf q b)
   bMult  = map gcf cbMult
   mMult' = decryptGLWE (p, q, n) (aMult, cbMult) s
+
+-- example from https://www.zama.ai/post/tfhe-deep-dive-part-4
+prop_switchModulus = [-13,6,-2,4,13] == switchModulus 64 32 [-25, 12, -3, 7, 26]
+
+prop_lweModulusSwitching =
+    k == length s &&
+    n >= length m &&
+    k == length a &&
+    -- B = 26
+    b == [26] &&
+    -- decrypted message should be the same as the original one
+    m == map gcf m'
+  where
+  p = 4
+  q = 64
+  -- degree of cyclomatic polynomial x^n + 1
+  n = 1
+  -- the number of polynomials making up the secret key
+  k = 4
+  -- secret key
+  s = [0, 1, 1, 0]
+  -- message to encrypt
+  -- M = 1
+  m = [1]
+  -- mask
+  a = [-25, 12, -3, 7]
+  -- discrete Gaussian error
+  -- E = 1
+  e  = [1]
+  bc = encryptLWE (p, q) s a e m
+  b  = map gcf bc
+  omega = 32
+  a' = switchModulus q omega a
+  b' = switchModulusGCf q omega bc
+  m' = decryptLWE (p, omega) (a', b') s
 
 return []
 runTests = $quickCheckAll
